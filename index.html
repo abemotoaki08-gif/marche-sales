@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>マルシェ売上帳</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════ RESET & ROOT ═══════ */
+:root{
+  --g:#3d7a4e; --gp:#e8f5ec; --gl:#5a9e6e;
+  --o:#e07b39; --ol:#f5a06a;
+  --r:#d94f4f; --rp:#fdeaea;
+  --b:#3a6ea8;
+  --bg:#f5f2ed; --card:#fff;
+  --tx:#222; --su:#999; --bd:#e4dfd6;
+  --sh:0 1px 6px rgba(0,0,0,.06);
+  --rad:12px;
+  --HH:52px;   /* header */
+  --NH:56px;   /* nav bar (without safe area) */
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html{height:100%;}
+body{
+  font-family:'Noto Sans JP',sans-serif;
+  background:var(--bg);color:var(--tx);
+  display:flex;flex-direction:column;
+  height:100vh;
+  overflow:hidden;
+  position:fixed;width:100%;top:0;left:0;
+}
+
+/* ═══════ HEADER ═══════ */
+header{
+  flex:0 0 var(--HH);
+  background:var(--g);color:#fff;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 14px;
+  box-shadow:0 2px 6px rgba(40,100,60,.3);
+  position:relative;z-index:40;
+}
+/* safe area top padding for notch */
+.hl h1{font-family:'Zen Maru Gothic',sans-serif;font-size:16px;font-weight:900;letter-spacing:.03em;}
+.hl .sub{font-size:9px;opacity:.72;margin-top:1px;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hr{text-align:right;}
+.hr .lbl{font-size:8px;opacity:.72;}
+.hr .val{font-family:'Zen Maru Gothic',sans-serif;font-size:20px;font-weight:900;line-height:1.1;}
+
+/* ═══════ SCROLL WRAPPER ═══════ */
+main{
+  flex:1 1 0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-y:contain;
+  padding:10px 10px 12px;
+}
+
+/* ═══════ NAV BAR ═══════ */
+nav{
+  flex:0 0 var(--NH);
+  background:#fff;
+  border-top:1px solid var(--bd);
+  display:flex;
+  /* add home-bar spacing */
+  padding-bottom:env(safe-area-inset-bottom,0);
+}
+.ni{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  cursor:pointer;color:var(--su);
+  font-size:8.5px;font-weight:600;gap:1px;
+  transition:color .12s;
+  padding-bottom:2px;
+  /* ensure icon+label never wraps even on tiny phones */
+  min-width:0;
+}
+.ni.on{color:var(--g);}
+.ni .ic{font-size:19px;line-height:1;display:block;}
+
+/* ═══════ PAGES ═══════ */
+.pg{display:none;}
+.pg.on{display:block;}
+
+/* ═══════ CARDS ═══════ */
+.card{background:var(--card);border-radius:var(--rad);padding:12px;margin-bottom:10px;box-shadow:var(--sh);}
+.ct{font-family:'Zen Maru Gothic',sans-serif;font-size:12px;font-weight:700;color:var(--g);margin-bottom:8px;display:flex;align-items:center;gap:4px;}
+.chd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.chd .ct{margin-bottom:0;}
+
+/* ═══════ FORM ═══════ */
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.ff{display:flex;flex-direction:column;gap:3px;}
+.ff.full{grid-column:1/-1;}
+.ff label{font-size:9px;color:var(--su);font-weight:600;letter-spacing:.02em;}
+.ff input,.ff select{
+  border:1.5px solid var(--bd);border-radius:8px;
+  padding:6px 9px;font-size:13px;
+  font-family:'Noto Sans JP',sans-serif;
+  background:var(--bg);color:var(--tx);outline:none;
+  transition:border-color .18s;width:100%;
+  /* prevent iOS zoom on focus */
+  font-size:16px;
+}
+.ff input:focus,.ff select:focus{border-color:var(--g);background:#fff;}
+/* revert display size for label-looking text */
+.ff input[inputmode="numeric"]{font-size:15px;}
+.ff input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+
+/* info preview box */
+.info-preview{
+  margin-top:9px;padding:9px 10px;
+  background:var(--gp);border-radius:9px;
+  display:flex;flex-direction:column;gap:4px;
+}
+.ip-row{display:flex;justify-content:space-between;align-items:center;font-size:11px;}
+.ip-row .lbl{color:var(--su);}
+.ip-row .val{font-family:'Zen Maru Gothic',sans-serif;font-weight:700;color:var(--r);}
+.ip-row.total .lbl{font-weight:700;color:var(--tx);font-size:12px;}
+.ip-row.total .val{color:var(--g);font-size:14px;}
+
+/* ═══════ PRODUCT GRID ═══════ */
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.pbtn{
+  background:#fff;border:2px solid var(--bd);border-radius:11px;
+  padding:10px 7px;text-align:center;cursor:pointer;
+  position:relative;user-select:none;transition:all .1s;
+}
+.pbtn:active{transform:scale(.93);}
+.pbtn.on{border-color:var(--g);background:var(--gp);}
+.pbtn .em{font-size:22px;display:block;margin-bottom:3px;line-height:1;}
+.pbtn .nm{font-size:10px;font-weight:700;line-height:1.25;margin-bottom:2px;}
+.pbtn .pr{font-size:12px;font-weight:900;color:var(--o);font-family:'Zen Maru Gothic',sans-serif;}
+.qb{position:absolute;top:-6px;right:-6px;background:var(--g);color:#fff;border-radius:50%;width:20px;height:20px;font-size:10px;font-weight:700;display:none;align-items:center;justify-content:center;}
+.pbtn.on .qb{display:flex;}
+
+/* ═══════ CART ═══════ */
+.ci{display:flex;align-items:center;padding:7px 0;border-bottom:1px solid var(--bd);}
+.ci:last-child{border-bottom:none;}
+.ci .em{font-size:16px;margin-right:7px;flex-shrink:0;}
+.ci .nm{flex:1;font-size:11px;font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cc{display:flex;align-items:center;gap:5px;flex-shrink:0;}
+.qn{width:24px;height:24px;border-radius:50%;border:none;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.qn.m{background:#feeeed;color:#c44;}
+.qn.p{background:var(--gp);color:var(--g);}
+.qnum{font-size:13px;font-weight:700;min-width:18px;text-align:center;}
+.cpr{font-size:12px;font-weight:700;color:var(--o);min-width:58px;text-align:right;font-family:'Zen Maru Gothic',sans-serif;}
+.ctr{display:flex;justify-content:space-between;align-items:center;padding:8px 0 0;border-top:1px solid var(--bd);margin-top:4px;}
+.ctl{font-size:12px;font-weight:700;}
+.ctv{font-family:'Zen Maru Gothic',sans-serif;font-size:21px;font-weight:900;color:var(--o);}
+.cob{
+  width:100%;
+  background:linear-gradient(135deg,var(--o),var(--ol));
+  color:#fff;border:none;border-radius:var(--rad);
+  padding:13px;font-family:'Zen Maru Gothic',sans-serif;
+  font-size:14px;font-weight:900;cursor:pointer;margin-top:9px;
+  box-shadow:0 3px 10px rgba(224,123,57,.28);
+  letter-spacing:.04em;transition:all .15s;
+}
+.cob:active{transform:scale(.97);}
+.cob:disabled{opacity:.3;cursor:not-allowed;transform:none;}
+
+/* ═══════ TIMELINE ═══════ */
+.sb{border-bottom:1px solid var(--bd);}
+.sb:last-child{border-bottom:none;}
+.sh{display:flex;align-items:center;justify-content:space-between;padding:9px 0;cursor:pointer;}
+.sl{display:flex;align-items:center;gap:5px;flex:1;min-width:0;}
+.sl .lbl{font-size:11px;font-weight:700;color:var(--g);white-space:nowrap;}
+.sl .cnt{font-size:9px;background:var(--gp);color:var(--g);padding:1px 6px;border-radius:20px;font-weight:600;}
+.sh .tot{font-family:'Zen Maru Gothic',sans-serif;font-size:13px;font-weight:900;color:var(--o);flex-shrink:0;}
+.sd{display:none;padding-bottom:4px;}
+.sd.on{display:block;}
+.se{display:flex;align-items:center;background:var(--bg);border-radius:8px;padding:6px 8px;margin-bottom:4px;gap:6px;}
+.se .tm{font-size:10px;font-weight:700;color:var(--g);flex-shrink:0;min-width:30px;}
+.se .it{flex:1;font-size:9px;color:var(--su);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.se .am{font-family:'Zen Maru Gothic',sans-serif;font-size:11px;font-weight:700;color:var(--o);flex-shrink:0;}
+.sab{display:flex;gap:3px;flex-shrink:0;}
+.sab button{width:26px;height:26px;border-radius:6px;border:none;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.sab .ed{background:var(--gp);color:var(--g);}
+.sab .dl{background:var(--rp);color:var(--r);}
+.sab button:active{transform:scale(.86);}
+
+/* ═══════ SUMMARY ═══════ */
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.sc{background:#fff;border-radius:11px;padding:10px;box-shadow:var(--sh);text-align:center;}
+.sc .sl2{font-size:9px;color:var(--su);margin-bottom:2px;}
+.sc .sv{font-family:'Zen Maru Gothic',sans-serif;font-size:16px;font-weight:900;color:var(--g);}
+.sc.hi .sv{color:var(--o);font-size:20px;}
+.er{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--bd);font-size:11px;}
+.er:last-child{border-bottom:none;}
+.er .el{color:var(--su);}
+.er .ev{font-family:'Zen Maru Gothic',sans-serif;font-weight:700;color:var(--r);}
+.er.pf .el{font-weight:700;color:var(--tx);}
+.er.pf .ev{font-size:13px;}
+.rk{display:flex;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd);}
+.rk:last-child{border-bottom:none;}
+.rk .rn{width:20px;height:20px;border-radius:50%;background:var(--gp);color:var(--g);font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center;margin-right:7px;flex-shrink:0;}
+.rk .rn.g1{background:#fff3cd;color:#b8860b;}
+.rk .rn.g2{background:#e8e8e8;color:#666;}
+.rk .rn.g3{background:#fde8d8;color:#c44;}
+.rk .re{font-size:14px;margin-right:5px;}
+.rk .rna{flex:1;font-size:11px;font-weight:500;}
+.rk .rs{text-align:right;}
+.rk .rq{font-size:9px;color:var(--su);}
+.rk .ra{font-family:'Zen Maru Gothic',sans-serif;font-size:11px;font-weight:700;color:var(--o);}
+.hr2{display:flex;justify-content:space-between;font-size:10px;padding:4px 0;border-bottom:1px solid var(--bd);color:var(--su);}
+.hr2:last-child{border-bottom:none;}
+.hr2 .ht{color:var(--g);font-weight:700;min-width:30px;}
+.hr2 .hi2{flex:1;margin:0 6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.hr2 .ha{font-weight:700;color:var(--o);font-family:'Zen Maru Gothic',sans-serif;}
+
+/* ═══════ CASH PAGE ═══════ */
+.dt{width:100%;border-collapse:collapse;}
+.dt th{font-size:9px;color:var(--su);font-weight:600;padding:0 3px 6px;text-align:center;}
+.dt th:first-child{text-align:left;}
+.dt td{padding:4px 3px;border-bottom:1px solid var(--bd);vertical-align:middle;}
+.dt tr:last-child td{border-bottom:none;}
+.dl{font-size:13px;font-weight:700;font-family:'Zen Maru Gothic',sans-serif;}
+.dl.bi{color:var(--g);}
+.dl.co{color:var(--b);}
+.dqi input{
+  width:58px;border:1.5px solid var(--bd);border-radius:7px;
+  padding:5px 6px;font-size:14px;font-weight:700;
+  text-align:center;font-family:'Zen Maru Gothic',sans-serif;
+  background:var(--bg);outline:none;color:var(--tx);
+}
+.dqi input:focus{border-color:var(--g);background:#fff;}
+.dqs{font-family:'Zen Maru Gothic',sans-serif;font-size:11px;font-weight:700;color:var(--su);text-align:right;}
+.dqs.v{color:var(--tx);}
+
+.cg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.cc2{background:#fff;border-radius:11px;padding:10px;box-shadow:var(--sh);text-align:center;}
+.cc2 .cl{font-size:9px;color:var(--su);margin-bottom:2px;}
+.cc2 .cv{font-family:'Zen Maru Gothic',sans-serif;font-size:15px;font-weight:900;color:var(--g);}
+.cc2.hi .cv{color:var(--o);font-size:19px;}
+.cxr{display:flex;justify-content:space-between;align-items:center;padding:5px 2px;border-bottom:1px solid var(--bd);font-size:11px;}
+.cxr:last-child{border-bottom:none;}
+.cxr .cxl{color:var(--su);}
+.cxr .cxv{font-family:'Zen Maru Gothic',sans-serif;font-weight:700;}
+.cxr.mn .cxv{color:var(--r);}
+.cxr.res .cxl{font-weight:700;color:var(--tx);font-size:12px;}
+.cxr.res .cxv{font-size:14px;}
+
+/* ═══════ PRODUCT LIST ═══════ */
+.pli{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid var(--bd);gap:8px;}
+.pli:last-child{border-bottom:none;}
+.pli .em{font-size:22px;cursor:pointer;}
+.pli .inf{flex:1;min-width:0;}
+.pli .nm{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pli .pr{font-size:11px;color:var(--o);font-weight:700;font-family:'Zen Maru Gothic',sans-serif;}
+.pli .ac{display:flex;gap:5px;flex-shrink:0;}
+.ib{width:28px;height:28px;border-radius:7px;border:none;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.ib.ed{background:var(--gp);color:var(--g);}
+.ib.dl{background:var(--rp);color:var(--r);}
+.ib:active{transform:scale(.88);}
+.addb{display:flex;align-items:center;gap:4px;background:var(--g);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;font-family:'Noto Sans JP',sans-serif;cursor:pointer;}
+
+/* ═══════ WEATHER BTN ═══════ */
+.wbtn{border:1.5px solid var(--bd);background:#fff;border-radius:20px;padding:5px 10px;font-size:12px;cursor:pointer;color:var(--su);font-family:'Noto Sans JP',sans-serif;}
+.wbtn.on{border-color:var(--g);background:var(--gp);color:var(--g);font-weight:700;}
+
+/* ═══════ SHARE BTN ═══════ */
+.shb{width:100%;background:var(--g);color:#fff;border:none;border-radius:var(--rad);padding:12px;font-family:'Zen Maru Gothic',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:5px;}
+.rst{display:flex;align-items:center;gap:4px;background:var(--bg);color:var(--su);border:1.5px solid var(--bd);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;font-family:'Noto Sans JP',sans-serif;cursor:pointer;}
+
+/* ═══════ EMPTY ═══════ */
+.emp{text-align:center;padding:28px 12px;color:var(--su);}
+.emp .ico{font-size:32px;margin-bottom:6px;}
+.emp .txt{font-size:11px;line-height:1.8;}
+
+/* ═══════ HINT ═══════ */
+.hint{font-size:9px;color:var(--su);text-align:center;padding:0 0 6px;}
+
+/* ═══════ MODAL ═══════ */
+.mov{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .18s;}
+.mov.on{opacity:1;pointer-events:all;}
+.msh{
+  background:#fff;width:100%;
+  border-radius:16px 16px 0 0;
+  padding:15px 14px;
+  padding-bottom:calc(env(safe-area-inset-bottom,0px) + 24px);
+  transform:translateY(100%);
+  transition:transform .26s cubic-bezier(.34,1.3,.64,1);
+  max-height:80vh;overflow-y:auto;
+}
+.mov.on .msh{transform:translateY(0);}
+.mhd{width:34px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 12px;}
+.mtt{font-family:'Zen Maru Gothic',sans-serif;font-size:14px;font-weight:900;color:var(--g);text-align:center;margin-bottom:12px;}
+.mf{display:flex;flex-direction:column;gap:3px;margin-bottom:10px;}
+.mf label{font-size:9px;color:var(--su);font-weight:600;}
+.mf input{border:1.5px solid var(--bd);border-radius:8px;padding:9px 11px;font-size:16px;font-family:'Noto Sans JP',sans-serif;outline:none;background:var(--bg);transition:border-color .18s;}
+.mf input:focus{border-color:var(--g);background:#fff;}
+.esl{font-size:9px;color:var(--su);font-weight:600;margin-bottom:5px;display:flex;align-items:center;gap:5px;}
+.epr{font-size:20px;}
+.egr{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-bottom:12px;}
+.eo{font-size:19px;text-align:center;padding:2px 1px;border-radius:6px;cursor:pointer;border:2px solid transparent;line-height:1.4;}
+.eo:active{transform:scale(.8);}
+.eo.on{border-color:var(--g);background:var(--gp);}
+.msv{width:100%;background:var(--g);color:#fff;border:none;border-radius:var(--rad);padding:12px;font-family:'Zen Maru Gothic',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-top:2px;}
+.msv:active{opacity:.82;}
+.mcl{width:100%;background:#fff;color:var(--su);border:1.5px solid var(--bd);border-radius:var(--rad);padding:10px;font-family:'Noto Sans JP',sans-serif;font-size:12px;cursor:pointer;margin-top:6px;}
+.mdl{width:100%;background:var(--r);color:#fff;border:none;border-radius:var(--rad);padding:12px;font-family:'Zen Maru Gothic',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-top:2px;}
+.mdl:active{opacity:.82;}
+.sei{display:flex;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd);}
+.sei:last-child{border-bottom:none;}
+.sei .em{font-size:16px;margin-right:6px;flex-shrink:0;}
+.sei .nm{flex:1;font-size:11px;font-weight:500;}
+.sei .cc2{display:flex;align-items:center;gap:4px;flex-shrink:0;background:transparent;padding:0;box-shadow:none;border-radius:0;}
+.sei .pr{font-size:10px;font-weight:700;color:var(--o);min-width:52px;text-align:right;font-family:'Zen Maru Gothic',sans-serif;}
+
+/* ═══════ TOAST ═══════ */
+.toast{position:fixed;bottom:calc(var(--NH) + env(safe-area-inset-bottom,0px) + 8px);left:50%;transform:translateX(-50%) translateY(12px);background:#222;color:#fff;padding:7px 15px;border-radius:50px;font-size:11px;font-weight:500;opacity:0;transition:all .22s;z-index:999;white-space:nowrap;}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ═══════ WEATHER BTN ═══════ */
+.wbtn{border:1.5px solid var(--bd);background:#fff;border-radius:20px;padding:5px 10px;font-size:12px;cursor:pointer;color:var(--su);font-family:'Noto Sans JP',sans-serif;}
+.wbtn.on{border-color:var(--g);background:var(--gp);color:var(--g);font-weight:700;}
+</style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<header>
+  <div class="hl">
+    <h1>🌿 マルシェ売上帳</h1>
+    <div class="sub" id="hdr-sub">基本情報を設定してください</div>
+  </div>
+  <div class="hr">
+    <div class="lbl">本日売上</div>
+    <div class="val" id="hdr-tot">¥0</div>
+  </div>
+</header>
+
+<!-- ═══ MAIN SCROLL ═══ -->
+<main id="main">
+
+  <!-- 基本情報 -->
+  <div class="pg on" id="pg-info">
+    <div class="card">
+      <div class="ct">📋 開催情報</div>
+      <div class="fg">
+        <div class="ff"><label>📅 日付</label><input type="date" id="i-date"></div>
+        <div class="ff full"><label>🌤️ 天気</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
+            <input type="hidden" id="i-weather" value="☀️晴れ">
+            <button type="button" class="wbtn on" id="wb-0" onclick="setWeather('☀️晴れ',0)">☀️ 晴れ</button>
+            <button type="button" class="wbtn" id="wb-1" onclick="setWeather('⛅曇り',1)">⛅ 曇り</button>
+            <button type="button" class="wbtn" id="wb-2" onclick="setWeather('🌧️雨',2)">🌧️ 雨</button>
+            <button type="button" class="wbtn" id="wb-3" onclick="setWeather('❄️雪',3)">❄️ 雪</button>
+            <button type="button" class="wbtn" id="wb-4" onclick="setWeather('🌀台風',4)">🌀 台風</button>
+          </div>
+        </div>
+        <div class="ff"><label>👤 販売者</label><input type="text" id="i-seller" placeholder="氏名"></div>
+        <div class="ff full"><label>📍 販売場所</label><input type="text" id="i-loc" placeholder="例：宇佐マルシェ Aブース"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">💴 経費・設定</div>
+      <div class="fg">
+        <div class="ff"><label>💰 おつり準備金（円）</label><input type="number" id="i-change" value="0" inputmode="numeric"></div>
+        <div class="ff"><label>🏪 出店料（円）</label><input type="number" id="i-booth" value="0" inputmode="numeric"></div>
+        <div class="ff"><label>📊 販売手数料（%）</label><input type="number" id="i-fee" value="0" step="0.1" inputmode="decimal"></div>
+        <div class="ff"><label>📦 その他経費（円）</label><input type="number" id="i-exp" value="0" inputmode="numeric"></div>
+      </div>
+      <div class="info-preview">
+        <div class="ip-row"><span class="lbl">販売手数料（売上×率）</span><span class="val" id="ip-fee">¥0</span></div>
+        <div class="ip-row"><span class="lbl">経費合計</span><span class="val" id="ip-etot">¥0</span></div>
+        <div class="ip-row total" style="border-top:1px dashed var(--bd);margin-top:4px;padding-top:5px;">
+          <span class="lbl">予想手取り</span><span class="val" id="ip-prof">¥0</span></div>
+      </div>
+    </div>
+  <button onclick="clearData()" style="width:100%;background:#fff;color:var(--r);border:1.5px solid var(--r);border-radius:var(--rad);padding:11px;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:10px;">🗑️ 全データをリセット</button>
+  </div>
+
+  <!-- 会計 -->
+  <div class="pg" id="pg-reg">
+    <div class="card">
+      <div class="ct">🛒 商品を選択</div>
+      <div class="pgrid" id="pgrid"></div>
+    </div>
+    <div class="card">
+      <div class="ct">🧾 現在の会計</div>
+      <div id="cart"></div>
+      <div class="ctr">
+        <span class="ctl">合計</span>
+        <span class="ctv" id="ctot">¥0</span>
+      </div>
+      <div id="okuri-area" style="display:none;margin-top:10px;padding:10px;background:var(--gp);border-radius:10px;">
+        <div style="font-size:10px;color:var(--su);font-weight:600;margin-bottom:6px;">💴 お預かり金額</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input type="number" id="azukari" inputmode="numeric" placeholder="0"
+            style="flex:1;border:1.5px solid var(--bd);border-radius:8px;padding:8px 10px;font-size:18px;font-weight:700;font-family:'Zen Maru Gothic',sans-serif;background:#fff;outline:none;color:var(--tx);"
+            oninput="calcOkuri()">
+          <span style="font-size:12px;color:var(--su);">円</span>
+        </div>
+        <div id="okuri-result" style="margin-top:8px;display:none;">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 2px;">
+            <span style="font-size:12px;font-weight:700;color:var(--su);">お釣り</span>
+            <span id="okuri-val" style="font-family:'Zen Maru Gothic',sans-serif;font-size:24px;font-weight:900;color:var(--g);">¥0</span>
+          </div>
+          <div id="okuri-warn" style="display:none;font-size:11px;color:var(--r);text-align:center;padding:2px 0;">⚠️ 金額が不足しています</div>
+        </div>
+      </div>
+      <button class="cob" id="cob" onclick="checkout()" disabled>💰 会計を確定する</button>
+    </div>
+  </div>
+
+  <!-- 時間帯 -->
+  <div class="pg" id="pg-tl">
+    <div class="card">
+      <div class="ct">⏱️ 時間帯別売上</div>
+      <div id="tl-content"><div class="emp"><div class="ico">📊</div><div class="txt">まだ売上データがありません</div></div></div>
+    </div>
+  </div>
+
+  <!-- 集計 -->
+  <div class="pg" id="pg-sum">
+    <div class="sg">
+      <div class="sc hi" style="grid-column:1/-1"><div class="sl2">本日の総売上</div><div class="sv" id="s-tot">¥0</div></div>
+      <div class="sc"><div class="sl2">会計件数</div><div class="sv" id="s-cnt">0件</div></div>
+      <div class="sc"><div class="sl2">平均客単価</div><div class="sv" id="s-avg">¥0</div></div>
+    </div>
+    <div class="card">
+      <div class="ct">💴 経費・収支</div>
+      <div class="er"><span class="el">📊 販売手数料</span><span class="ev" id="s-fee">¥0</span></div>
+      <div class="er"><span class="el">🏪 出店料</span><span class="ev" id="s-booth">¥0</span></div>
+      <div class="er"><span class="el">📦 その他経費</span><span class="ev" id="s-exp">¥0</span></div>
+      <div class="er"><span class="el">💴 経費合計</span><span class="ev" id="s-etot">¥0</span></div>
+      <div class="er pf"><span class="el">✅ 手取り利益</span><span class="ev" id="s-prof">¥0</span></div>
+    </div>
+    <div class="card">
+      <div class="ct">🏆 商品別ランキング</div>
+      <div id="rk-content"><div class="emp"><div class="ico">📦</div><div class="txt">まだ販売データがありません</div></div></div>
+    </div>
+    <div class="card">
+      <div class="ct">📜 売上履歴</div>
+      <div id="hist-content"><div class="emp"><div class="ico">🧾</div><div class="txt">まだ売上データがありません</div></div></div>
+    </div>
+    <button class="shb" onclick="shareReport()">📤 集計レポートを共有</button>
+  </div>
+
+  <!-- 現金 -->
+  <div class="pg" id="pg-cash">
+    <div class="card">
+      <div class="chd">
+        <div class="ct">💴 現金カウント</div>
+        <button class="rst" onclick="resetCash()">↺ リセット</button>
+      </div>
+      <table class="dt">
+        <thead><tr><th>金種</th><th>枚数</th><th>小計</th></tr></thead>
+        <tbody id="cash-tbody"></tbody>
+      </table>
+    </div>
+    <div class="cg">
+      <div class="cc2 hi" style="grid-column:1/-1"><div class="cl">現金合計（カウント）</div><div class="cv" id="c-counted">¥0</div></div>
+      <div class="cc2"><div class="cl">おつり準備金</div><div class="cv" id="c-fund">¥0</div></div>
+      <div class="cc2 hi"><div class="cl">売上入金分</div><div class="cv" id="c-in">¥0</div></div>
+    </div>
+    <div class="card">
+      <div class="ct">📊 収支内訳</div>
+      <div class="cxr mn"><span class="cxl">📊 販売手数料</span><span class="cxv" id="c-fee">−¥0</span></div>
+      <div class="cxr mn"><span class="cxl">🏪 出店料</span><span class="cxv" id="c-booth">−¥0</span></div>
+      <div class="cxr mn"><span class="cxl">📦 その他経費</span><span class="cxv" id="c-exp">−¥0</span></div>
+      <div class="cxr res" id="c-prof-row"><span class="cxl">✅ 手取り（経費差引後）</span><span class="cxv" id="c-prof">¥0</span></div>
+    </div>
+    <div class="card">
+      <div class="ct">🔍 過不足チェック</div>
+      <div class="cxr"><span class="cxl">売上記録上の入金</span><span class="cxv" id="c-exp2" style="color:var(--g);font-weight:700;">¥0</span></div>
+      <div class="cxr"><span class="cxl">実際カウント入金分</span><span class="cxv" id="c-act" style="font-weight:700;">¥0</span></div>
+      <div class="cxr res" id="c-diff-row"><span class="cxl">過不足</span><span class="cxv" id="c-diff">¥0</span></div>
+    </div>
+  </div>
+
+  <!-- 商品 -->
+  <div class="pg" id="pg-prod">
+    <div class="card">
+      <div class="chd">
+        <div class="ct">📦 商品リスト</div>
+        <button class="addb" onclick="openAddP()">＋ 商品追加</button>
+      </div>
+      <div id="prod-list"></div>
+    </div>
+    <p class="hint">絵文字をタップして変更 ／ ✏️ 編集 ／ 🗑️ 削除</p>
+  </div>
+
+</main>
+
+<!-- ═══ NAV ═══ -->
+<nav>
+  <div class="ni on" onclick="go('info',this)"><span class="ic">📋</span>基本</div>
+  <div class="ni"    onclick="go('reg',this)"><span class="ic">🛒</span>会計</div>
+  <div class="ni"    onclick="go('tl',this)"><span class="ic">📊</span>時間帯</div>
+  <div class="ni"    onclick="go('sum',this)"><span class="ic">📋</span>集計</div>
+  <div class="ni"    onclick="go('cash',this)"><span class="ic">💴</span>現金</div>
+  <div class="ni"    onclick="go('prod',this)"><span class="ic">📦</span>商品</div>
+</nav>
+
+<!-- ═══ MODALS ═══ -->
+<!-- その他（金額自由入力） -->
+<div class="mov" id="m-other" onclick="closeM('m-other',event)">
+  <div class="msh">
+    <div class="mhd"></div>
+    <div class="mtt">✏️ その他（自由入力）</div>
+    <div class="mf"><label>品目名（任意）</label><input type="text" id="oth-name" placeholder="例：バラ売り、まとめ売りなど"></div>
+    <div class="mf"><label>金額（円）</label><input type="number" id="oth-price" placeholder="0" inputmode="numeric"></div>
+    <button class="msv" onclick="addOther()">🛒 会計に追加</button>
+    <button class="mcl" onclick="closeM('m-other')">キャンセル</button>
+  </div>
+</div>
+
+<!-- 商品追加/編集 -->
+<div class="mov" id="m-prod" onclick="closeM('m-prod',event)">
+  <div class="msh">
+    <div class="mhd"></div>
+    <div class="mtt" id="m-prod-tt">商品を追加</div>
+    <div class="mf"><label>商品名</label><input type="text" id="m-name" placeholder="例：はちみつ（小）"></div>
+    <div class="mf"><label>価格（円）</label><input type="number" id="m-price" placeholder="例：800" inputmode="numeric"></div>
+    <div class="esl">絵文字アイコン <span class="epr" id="m-epr">🍯</span></div>
+    <div class="egr" id="m-egr"></div>
+    <button class="msv" onclick="saveP()">✅ 保存する</button>
+    <button class="mcl" onclick="closeM('m-prod')">キャンセル</button>
+  </div>
+</div>
+
+<!-- 商品削除 -->
+<div class="mov" id="m-dprod" onclick="closeM('m-dprod',event)">
+  <div class="msh">
+    <div class="mhd"></div>
+    <div class="mtt">この商品を削除しますか？</div>
+    <p style="text-align:center;font-size:12px;color:var(--su);margin-bottom:18px" id="m-dprod-nm"></p>
+    <button class="mdl" onclick="delPconf()">🗑️ 削除する</button>
+    <button class="mcl" onclick="closeM('m-dprod')">キャンセル</button>
+  </div>
+</div>
+
+<!-- 売上修正 -->
+<div class="mov" id="m-sedit" onclick="closeM('m-sedit',event)">
+  <div class="msh">
+    <div class="mhd"></div>
+    <div class="mtt" id="m-sedit-tt">売上を修正</div>
+    <div id="m-sedit-rows"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0 10px;border-top:1px solid var(--bd);margin-top:4px;">
+      <span style="font-size:12px;font-weight:700;">合計</span>
+      <span style="font-family:'Zen Maru Gothic',sans-serif;font-size:18px;font-weight:900;color:var(--o);" id="m-sedit-tot">¥0</span>
+    </div>
+    <button class="msv" onclick="saveSE()">✅ 修正を保存</button>
+    <button class="mcl" onclick="closeM('m-sedit')">キャンセル</button>
+  </div>
+</div>
+
+<!-- 売上削除 -->
+<div class="mov" id="m-dsale" onclick="closeM('m-dsale',event)">
+  <div class="msh">
+    <div class="mhd"></div>
+    <div class="mtt">この売上を削除しますか？</div>
+    <p style="text-align:center;font-size:11px;color:var(--su);margin-bottom:18px;line-height:1.8;" id="m-dsale-desc"></p>
+    <button class="mdl" onclick="delSconf()">🗑️ 削除する</button>
+    <button class="mcl" onclick="closeM('m-dsale')">キャンセル</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- 共有フォールバック -->
+<div class="mov" id="m-share" onclick="closeM('m-share',event)">
+  <div class="msh">
+    <div class="mhd"></div>
+    <div class="mtt">📤 レポートをコピー</div>
+    <p style="font-size:11px;color:var(--su);text-align:center;margin-bottom:8px;">下のテキストを長押しして全選択→コピーしてください</p>
+    <textarea id="share-text" readonly
+      style="width:100%;height:180px;border:1.5px solid var(--bd);border-radius:10px;padding:10px;font-size:11px;line-height:1.7;background:var(--bg);resize:none;outline:none;font-family:monospace;"
+      onclick="this.select()"></textarea>
+    <button class="msv" onclick="copyShareText()" style="margin-top:8px;">📋 コピーする</button>
+    <button class="mcl" onclick="closeM('m-share')">閉じる</button>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════
+   CONSTANTS
+══════════════════════════════════ */
+const EMOJIS=['🍯','🫙','🌼','🟡','🥦','🍓','🍪','🥕','🍑','🍋','🍅','🧅','🌽','🫚','🧄','🌾','🥬','🍆','🥑','🍇','🍊','🍒','🌿','🎁','🛒','🍵','☕','🧃','🍶','🫖','🥤','🧁','🍰','🍮','🥞','🌱','🫐','🥝','🫒','🍄'];
+const DENOMS=[
+  {v:10000,l:'¥10,000',t:'bi'},{v:5000,l:'¥5,000',t:'bi'},{v:1000,l:'¥1,000',t:'bi'},
+  {v:500,l:'¥500',t:'co'},{v:100,l:'¥100',t:'co'},{v:50,l:'¥50',t:'co'},
+  {v:10,l:'¥10',t:'co'},{v:5,l:'¥5',t:'co'},{v:1,l:'¥1',t:'co'}
+];
+
+/* ══════════════════════════════════
+   STATE
+══════════════════════════════════ */
+let PRODS=[
+  {id:1,nm:'はちみつ（小）',     pr:800, em:'🍯'},
+  {id:2,nm:'はちみつ（大）',     pr:1500,em:'🫙'},
+  {id:3,nm:'ミモザドレッシング', pr:650, em:'🌼'},
+  {id:4,nm:'ミモザジャム',       pr:700, em:'🟡'},
+  {id:5,nm:'野菜セット',         pr:500, em:'🥦'},
+  {id:6,nm:'フルーツ詰め合わせ', pr:1200,em:'🍓'},
+  {id:7,nm:'手作りクッキー',     pr:400, em:'🍪'},
+  {id:8,nm:'農園ドレッシング',   pr:550, em:'🫙'},
+  {id:9,nm:'梅干し',             pr:600, em:'🍑'},
+  {id:10,nm:'干し野菜セット',     pr:450, em:'🥕'},
+];
+let npid=11, cart={}, sales=[], nsid=1;
+let epid=null,dpid=null,esid=null,dsid=null;
+let eCart={}, selE='🍯';
+
+/* ══════════════════════════════════
+   INIT
+══════════════════════════════════ */
+window.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('i-date').value=new Date().toISOString().split('T')[0];
+  buildEGrid(); buildCashTable();
+  renderProds(); renderCart(); renderProdList();
+  ['i-seller','i-loc'].forEach(id=>document.getElementById(id).addEventListener('input',updateHdr));
+  ['i-change','i-booth','i-fee','i-exp'].forEach(id=>
+    document.getElementById(id).addEventListener('input',()=>{calcInfo();updateCash();saveData();}));
+  document.getElementById('i-date').addEventListener('change',saveData);
+  document.getElementById('i-weather').addEventListener('change',saveData);
+  loadData();
+  renderProds(); renderProdList(); renderSum(); renderTL(); updateHdr(); calcInfo();
+});
+
+/* ══════════════════════════════════
+   HEADER / INFO CALC
+══════════════════════════════════ */
+function updateHdr(){
+  const tot=sales.reduce((s,x)=>s+x.total,0);
+  document.getElementById('hdr-tot').textContent='¥'+tot.toLocaleString();
+  const loc=document.getElementById('i-loc').value;
+  const sel=document.getElementById('i-seller').value;
+  let info=loc||'';
+  if(sel) info+=(info?' · ':'')+sel;
+  document.getElementById('hdr-sub').textContent=info||'基本情報を設定してください';
+}
+
+function getE(){
+  const tot=sales.reduce((s,x)=>s+x.total,0);
+  const fp=parseFloat(document.getElementById('i-fee').value)||0;
+  const booth=parseInt(document.getElementById('i-booth').value)||0;
+  const exp=parseInt(document.getElementById('i-exp').value)||0;
+  const fund=parseInt(document.getElementById('i-change').value)||0;
+  const fee=Math.round(tot*fp/100);
+  const etot=fee+booth+exp;
+  return {tot,fp,booth,exp,fund,fee,etot,profit:tot-etot};
+}
+
+function calcInfo(){
+  const e=getE();
+  document.getElementById('ip-fee').textContent='¥'+e.fee.toLocaleString();
+  document.getElementById('ip-etot').textContent='¥'+e.etot.toLocaleString();
+  const pEl=document.getElementById('ip-prof');
+  pEl.textContent='¥'+e.profit.toLocaleString();
+  pEl.style.color=e.profit>=0?'var(--g)':'var(--r)';
+}
+
+/* ══════════════════════════════════
+   PRODUCTS (register)
+══════════════════════════════════ */
+function renderProds(){
+  const g=document.getElementById('pgrid');
+  const prodBtns = PRODS.length ? PRODS.map(p=>`
+    <div class="pbtn ${cart[p.id]?'on':''}" onclick="addCart(${p.id})">
+      <span class="em">${p.em}</span>
+      <div class="nm">${p.nm}</div>
+      <div class="pr">¥${p.pr.toLocaleString()}</div>
+      <div class="qb">${cart[p.id]||''}</div>
+    </div>`).join('') : '<div style="grid-column:1/-1;text-align:center;color:var(--su);font-size:11px;padding:12px 0;line-height:2">商品が登録されていません<br>「商品」タブから追加してください</div>';
+  // 「その他」ボタンを末尾に追加
+  const otherBtn = `<div class="pbtn" onclick="openOther()" style="border-style:dashed;border-color:var(--o);">
+      <span class="em">✏️</span>
+      <div class="nm" style="color:var(--o);">その他</div>
+      <div class="pr" style="color:var(--su);font-size:10px;">金額を入力</div>
+    </div>`;
+  g.innerHTML = prodBtns + otherBtn;
+}
+
+function addCart(id){
+  cart[id]=(cart[id]||0)+1;
+  renderProds(); renderCart();
+  if(navigator.vibrate) navigator.vibrate(20);
+}
+
+// その他（自由入力）
+var otherItems={}; // id -> {nm, pr}
+var nextOid=9000;  // その他専用ID帯
+
+function openOther(){
+  document.getElementById('oth-name').value='';
+  document.getElementById('oth-price').value='';
+  openM('m-other');
+  setTimeout(()=>document.getElementById('oth-price').focus(),300);
+}
+function addOther(){
+  var pr=parseInt(document.getElementById('oth-price').value)||0;
+  if(pr<=0){showToast('⚠️ 金額を入力してください');return;}
+  var nm=document.getElementById('oth-name').value.trim()||'その他';
+  var id=nextOid++;
+  otherItems[id]={nm:nm, pr:pr, em:'✏️'};
+  cart[id]=1;
+  closeM('m-other');
+  renderProds(); renderCart();
+  if(navigator.vibrate) navigator.vibrate(20);
+  showToast('✅ '+nm+' ¥'+pr.toLocaleString()+' を追加しました');
+}
+
+/* ══════════════════════════════════
+   CART
+══════════════════════════════════ */
+function findProd(id){
+  return PRODS.find(p=>p.id==id) || otherItems[id] || null;
+}
+
+function renderCart(){
+  const ids=Object.keys(cart).filter(id=>cart[id]>0);
+  const c=document.getElementById('cart');
+  if(!ids.length){
+    c.innerHTML='<div style="text-align:center;color:var(--su);font-size:11px;padding:12px 0">商品を選択してください</div>';
+    document.getElementById('ctot').textContent='¥0';
+    document.getElementById('cob').disabled=true; document.getElementById('okuri-area').style.display='none'; return;
+  }
+  let total=0;
+  c.innerHTML=ids.map(id=>{
+    const p=findProd(id); if(!p) return '';
+    const sub=p.pr*cart[id]; total+=sub;
+    return `<div class="ci">
+      <span class="em">${p.em}</span><span class="nm">${p.nm}</span>
+      <div class="cc">
+        <button class="qn m" onclick="chQty(${id},-1)">－</button>
+        <span class="qnum">${cart[id]}</span>
+        <button class="qn p" onclick="chQty(${id},1)">＋</button>
+      </div>
+      <span class="cpr">¥${sub.toLocaleString()}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('ctot').textContent='¥'+total.toLocaleString();
+  document.getElementById('cob').disabled=false;
+  document.getElementById('okuri-area').style.display='block';
+  document.getElementById('azukari').value='';
+  document.getElementById('okuri-result').style.display='none';
+}
+
+function chQty(id,d){
+  cart[id]=Math.max(0,(cart[id]||0)+d);
+  if(cart[id]===0) delete cart[id];
+  renderProds(); renderCart();
+}
+
+/* ══════════════════════════════════
+   CHECKOUT
+══════════════════════════════════ */
+function checkout(){
+  const items=Object.keys(cart).filter(id=>cart[id]>0).map(id=>{
+    const p=findProd(id);
+    return {id:parseInt(id),nm:p.nm,qty:cart[id],pr:p.pr,em:p.em};
+  });
+  if(!items.length) return;
+  const total=items.reduce((s,i)=>s+i.pr*i.qty,0);
+  const now=new Date();
+  const time=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  sales.push({id:nsid++,time,items,total});
+  cart={}; otherItems={};
+  renderProds(); renderCart(); renderTL(); renderSum();
+  updateHdr(); calcInfo(); updateCash(); saveData();
+  showToast('✅ ¥'+total.toLocaleString()+' ありがとうございました！');
+}
+
+/* ══════════════════════════════════
+   TIMELINE
+══════════════════════════════════ */
+function slotKey(t){
+  const h=parseInt(t.split(':')[0]);
+  return `${h.toString().padStart(2,'0')}:00〜${(h+1).toString().padStart(2,'0')}:00`;
+}
+
+function renderTL(){
+  const slots={};
+  sales.forEach(s=>{const k=slotKey(s.time);if(!slots[k]) slots[k]={sales:[],total:0};slots[k].sales.push(s);slots[k].total+=s.total;});
+  const c=document.getElementById('tl-content');
+  if(!Object.keys(slots).length){c.innerHTML='<div class="emp"><div class="ico">📊</div><div class="txt">まだ売上データがありません</div></div>';return;}
+  c.innerHTML=Object.entries(slots).sort(([a],[b])=>a.localeCompare(b)).map(([key,d])=>{
+    const sid='sl'+key.replace(/[^0-9]/g,'');
+    return `<div class="sb">
+      <div class="sh" onclick="toggleSlot('${sid}')">
+        <div class="sl"><span class="lbl">🕐 ${key}</span><span class="cnt">${d.sales.length}件</span></div>
+        <span class="tot">¥${d.total.toLocaleString()}</span>
+      </div>
+      <div class="sd" id="${sid}">
+        ${d.sales.map(s=>`
+          <div class="se">
+            <span class="tm">${s.time}</span>
+            <span class="it">${s.items.map(i=>`${i.em}×${i.qty}`).join(' ')}</span>
+            <span class="am">¥${s.total.toLocaleString()}</span>
+            <div class="sab">
+              <button class="ed" onclick="openSE(${s.id})">✏️</button>
+              <button class="dl" onclick="openDS(${s.id})">🗑️</button>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleSlot(id){document.getElementById(id).classList.toggle('on');}
+
+function openSE(sid){
+  const s=sales.find(s=>s.id===sid); if(!s) return;
+  esid=sid; eCart={};
+  s.items.forEach(i=>{eCart[i.id]=i.qty;});
+  document.getElementById('m-sedit-tt').textContent=s.time+' の売上を修正';
+  renderSERows();
+  openM('m-sedit');
+}
+function renderSERows(){
+  let tot=0;
+  document.getElementById('m-sedit-rows').innerHTML=PRODS.map(p=>{
+    const q=eCart[p.id]||0; const sub=p.pr*q; tot+=sub;
+    return `<div class="sei">
+      <span class="em">${p.em}</span><span class="nm">${p.nm}</span>
+      <div class="cc2" style="display:flex;align-items:center;gap:4px;">
+        <button class="qn m" onclick="eCartCh(${p.id},-1)">－</button>
+        <span class="qnum">${q}</span>
+        <button class="qn p" onclick="eCartCh(${p.id},1)">＋</button>
+      </div>
+      <span class="pr">${q>0?'¥'+sub.toLocaleString():''}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('m-sedit-tot').textContent='¥'+tot.toLocaleString();
+}
+function eCartCh(id,d){
+  eCart[id]=Math.max(0,(eCart[id]||0)+d);
+  if(eCart[id]===0) delete eCart[id];
+  renderSERows();
+}
+function saveSE(){
+  const items=Object.keys(eCart).filter(id=>eCart[id]>0).map(id=>{
+    const p=PRODS.find(p=>p.id==id);
+    return {id:p.id,nm:p.nm,qty:eCart[id],pr:p.pr,em:p.em};
+  });
+  if(!items.length){showToast('⚠️ 商品を1つ以上選択してください');return;}
+  const s=sales.find(s=>s.id===esid);
+  if(s){s.items=items;s.total=items.reduce((t,i)=>t+i.pr*i.qty,0);}
+  closeM('m-sedit'); renderTL(); renderSum(); updateHdr(); calcInfo(); updateCash(); saveData();
+  showToast('✅ 売上を修正しました');
+}
+function openDS(sid){
+  const s=sales.find(s=>s.id===sid); if(!s) return;
+  dsid=sid;
+  document.getElementById('m-dsale-desc').textContent=
+    `${s.time}  ${s.items.map(i=>`${i.em}${i.nm}×${i.qty}`).join('、')}  ¥${s.total.toLocaleString()}`;
+  openM('m-dsale');
+}
+function delSconf(){
+  sales=sales.filter(s=>s.id!==dsid);
+  closeM('m-dsale'); renderTL(); renderSum(); updateHdr(); calcInfo(); updateCash(); saveData();
+  showToast('🗑️ 売上を削除しました');
+}
+
+/* ══════════════════════════════════
+   SUMMARY
+══════════════════════════════════ */
+function renderSum(){
+  const e=getE();
+  document.getElementById('s-tot').textContent='¥'+e.tot.toLocaleString();
+  const cnt=sales.length;
+  document.getElementById('s-cnt').textContent=cnt+'件';
+  document.getElementById('s-avg').textContent='¥'+(cnt?Math.round(e.tot/cnt):0).toLocaleString();
+  document.getElementById('s-fee').textContent='¥'+e.fee.toLocaleString();
+  document.getElementById('s-booth').textContent='¥'+e.booth.toLocaleString();
+  document.getElementById('s-exp').textContent='¥'+e.exp.toLocaleString();
+  document.getElementById('s-etot').textContent='¥'+e.etot.toLocaleString();
+  const pEl=document.getElementById('s-prof');
+  pEl.textContent='¥'+e.profit.toLocaleString();
+  pEl.style.color=e.profit>=0?'var(--g)':'var(--r)';
+
+  const pm={};
+  sales.forEach(s=>s.items.forEach(i=>{
+    if(!pm[i.id]) pm[i.id]={nm:i.nm,em:i.em,qty:0,amt:0};
+    pm[i.id].qty+=i.qty; pm[i.id].amt+=i.pr*i.qty;
+  }));
+  const rk=Object.values(pm).sort((a,b)=>b.amt-a.amt);
+  const gc=['g1','g2','g3'];
+  document.getElementById('rk-content').innerHTML=rk.length?rk.map((p,i)=>`
+    <div class="rk">
+      <div class="rn ${gc[i]||''}">${i+1}</div>
+      <span class="re">${p.em}</span>
+      <div class="rna">${p.nm}</div>
+      <div class="rs"><div class="rq">${p.qty}個</div><div class="ra">¥${p.amt.toLocaleString()}</div></div>
+    </div>`).join('')
+  :'<div class="emp"><div class="ico">📦</div><div class="txt">まだ販売データがありません</div></div>';
+
+  document.getElementById('hist-content').innerHTML=sales.length?[...sales].reverse().map(s=>`
+    <div class="hr2">
+      <span class="ht">${s.time}</span>
+      <span class="hi2">${s.items.map(i=>`${i.em}${i.nm}×${i.qty}`).join('、')}</span>
+      <span class="ha">¥${s.total.toLocaleString()}</span>
+    </div>`).join('')
+  :'<div class="emp"><div class="ico">🧾</div><div class="txt">まだ売上データがありません</div></div>';
+}
+
+/* ══════════════════════════════════
+   CASH
+══════════════════════════════════ */
+function buildCashTable(){
+  document.getElementById('cash-tbody').innerHTML=DENOMS.map(d=>`
+    <tr>
+      <td><span class="dl ${d.t}">${d.l}</span></td>
+      <td class="dqi"><input type="number" id="csh-${d.v}" placeholder="0" inputmode="numeric" min="0" oninput="updateCash()"></td>
+      <td class="dqs" id="csub-${d.v}">—</td>
+    </tr>`).join('');
+}
+
+function getCQ(v){return Math.max(0,parseInt(document.getElementById('csh-'+v).value)||0);}
+
+function updateCash(){
+  let counted=0;
+  DENOMS.forEach(d=>{
+    const q=getCQ(d.v); const sub=d.v*q; counted+=sub;
+    const el=document.getElementById('csub-'+d.v);
+    if(q>0){el.textContent='¥'+sub.toLocaleString();el.className='dqs v';}
+    else{el.textContent='—';el.className='dqs';}
+  });
+  const e=getE();
+  const salesIn=counted-e.fund;
+  const profit=salesIn-e.etot;
+
+  document.getElementById('c-counted').textContent='¥'+counted.toLocaleString();
+  document.getElementById('c-fund').textContent='¥'+e.fund.toLocaleString();
+  document.getElementById('c-in').textContent=(salesIn>=0?'¥'+salesIn.toLocaleString():'−¥'+Math.abs(salesIn).toLocaleString());
+
+  document.getElementById('c-fee').textContent='−¥'+e.fee.toLocaleString();
+  document.getElementById('c-booth').textContent='−¥'+e.booth.toLocaleString();
+  document.getElementById('c-exp').textContent='−¥'+e.exp.toLocaleString();
+  const pEl=document.getElementById('c-prof');
+  pEl.textContent=(profit>=0?'':'−')+'¥'+Math.abs(profit).toLocaleString();
+  document.getElementById('c-prof-row').classList.toggle('neg-color',profit<0);
+  if(profit<0) pEl.style.color='var(--r)'; else pEl.style.color='var(--g)';
+
+  const expected=e.tot;
+  const diff=salesIn-expected;
+  document.getElementById('c-exp2').textContent='¥'+expected.toLocaleString();
+  document.getElementById('c-act').textContent=(salesIn>=0?'¥'+salesIn.toLocaleString():'−¥'+Math.abs(salesIn).toLocaleString());
+  const dEl=document.getElementById('c-diff');
+  if(diff===0){dEl.textContent='±¥0（一致）';dEl.style.color='var(--g)';}
+  else if(diff>0){dEl.textContent='+¥'+diff.toLocaleString()+' （過剰）';dEl.style.color='var(--b)';}
+  else{dEl.textContent='−¥'+Math.abs(diff).toLocaleString()+' （不足）';dEl.style.color='var(--r)';}
+}
+
+function resetCash(){
+  DENOMS.forEach(d=>{document.getElementById('csh-'+d.v).value='';});
+  updateCash(); showToast('↺ カウントをリセットしました');
+}
+
+/* ══════════════════════════════════
+   PRODUCT LIST
+══════════════════════════════════ */
+function renderProdList(){
+  const c=document.getElementById('prod-list');
+  if(!PRODS.length){c.innerHTML='<div class="emp"><div class="ico">📦</div><div class="txt">商品がありません<br>「＋ 商品追加」から登録しましょう</div></div>';return;}
+  c.innerHTML=PRODS.map(p=>`
+    <div class="pli">
+      <span class="em" onclick="openEditP(${p.id})">${p.em}</span>
+      <div class="inf"><div class="nm">${p.nm}</div><div class="pr">¥${p.pr.toLocaleString()}</div></div>
+      <div class="ac">
+        <button class="ib ed" onclick="openEditP(${p.id})">✏️</button>
+        <button class="ib dl" onclick="openDelP(${p.id})">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+/* ══════════════════════════════════
+   EMOJI GRID
+══════════════════════════════════ */
+function buildEGrid(){
+  document.getElementById('m-egr').innerHTML=EMOJIS.map(e=>
+    `<div class="eo ${e===selE?'on':''}" onclick="pickE('${e}')">${e}</div>`).join('');
+}
+function pickE(e){
+  selE=e;
+  document.getElementById('m-epr').textContent=e;
+  document.querySelectorAll('.eo').forEach(el=>el.classList.toggle('on',el.textContent.trim()===e));
+}
+
+/* ══════════════════════════════════
+   PRODUCT MODAL
+══════════════════════════════════ */
+function openAddP(){
+  epid=null;
+  document.getElementById('m-prod-tt').textContent='商品を追加';
+  document.getElementById('m-name').value='';
+  document.getElementById('m-price').value='';
+  selE='🍯'; buildEGrid();
+  document.getElementById('m-epr').textContent=selE;
+  openM('m-prod');
+  setTimeout(()=>document.getElementById('m-name').focus(),320);
+}
+function openEditP(id){
+  const p=PRODS.find(p=>p.id===id); if(!p) return;
+  epid=id;
+  document.getElementById('m-prod-tt').textContent='商品を編集';
+  document.getElementById('m-name').value=p.nm;
+  document.getElementById('m-price').value=p.pr;
+  selE=p.em; buildEGrid();
+  document.getElementById('m-epr').textContent=selE;
+  openM('m-prod');
+}
+function saveP(){
+  const nm=document.getElementById('m-name').value.trim();
+  const pr=parseInt(document.getElementById('m-price').value);
+  if(!nm){showToast('⚠️ 商品名を入力してください');return;}
+  if(!pr||pr<=0){showToast('⚠️ 正しい価格を入力してください');return;}
+  if(epid===null){PRODS.push({id:npid++,nm,pr,em:selE});showToast('✅ 商品を追加しました');}
+  else{const p=PRODS.find(p=>p.id===epid);if(p){p.nm=nm;p.pr=pr;p.em=selE;}showToast('✅ 商品を更新しました');}
+  closeM('m-prod'); renderProdList(); renderProds(); saveData();
+}
+function openDelP(id){
+  const p=PRODS.find(p=>p.id===id); if(!p) return;
+  dpid=id;
+  document.getElementById('m-dprod-nm').textContent=`${p.em} ${p.nm}  ¥${p.pr.toLocaleString()}`;
+  openM('m-dprod');
+}
+function delPconf(){
+  PRODS=PRODS.filter(p=>p.id!==dpid);
+  delete cart[dpid];
+  closeM('m-dprod'); renderProdList(); renderProds(); renderCart(); saveData();
+  showToast('🗑️ 商品を削除しました');
+}
+
+/* ══════════════════════════════════
+   SHARE
+══════════════════════════════════ */
+
+function calcOkuri(){
+  const total=parseInt(document.getElementById('ctot').textContent.replace(/[^0-9]/g,''))||0;
+  const azukari=parseInt(document.getElementById('azukari').value)||0;
+  const res=document.getElementById('okuri-result');
+  const warn=document.getElementById('okuri-warn');
+  const val=document.getElementById('okuri-val');
+  if(azukari===0){res.style.display='none';return;}
+  res.style.display='block';
+  const okuri=azukari-total;
+  if(okuri<0){val.textContent='---';warn.style.display='block';}
+  else{val.textContent='¥'+okuri.toLocaleString();warn.style.display='none';}
+}
+
+var GAS_URL='https://script.google.com/macros/s/AKfycbwcG4RoMPxENmeV_T4dEpQkkAdFGLO1zWY8-AxS0oUH9jLWpHFD2vuBoZMVx2JLIrGn/exec';
+function sendAllToSheet(callback){
+  try{
+    if(!sales.length){callback&&callback(false,'売上データなし');return;}
+    var payload={
+      date:document.getElementById('i-date').value,
+      weather:document.getElementById('i-weather').value,
+      seller:document.getElementById('i-seller').value,
+      loc:document.getElementById('i-loc').value,
+      sales:sales
+    };
+    fetch(GAS_URL,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify(payload)
+    })
+    .then(function(res){return res.text();})
+    .then(function(txt){
+      try{
+        var r=JSON.parse(txt);
+        if(r.status==='ok'){callback&&callback(true);}
+        else{callback&&callback(false,r.msg||'エラー');}
+      }catch(e){
+        // no-corsでレスポンス読めなくてもOK扱い
+        callback&&callback(true);
+      }
+    })
+    .catch(function(err){callback&&callback(false,err.toString());});
+  }catch(e){callback&&callback(false,e.toString());}
+}
+
+var SK='marche_v3';
+function saveData(){
+  try{
+    localStorage.setItem(SK,JSON.stringify({
+      sales,nsid,PRODS,npid,
+      info:{
+        date:document.getElementById('i-date').value,
+        weather:document.getElementById('i-weather').value,
+        seller:document.getElementById('i-seller').value,
+        loc:document.getElementById('i-loc').value,
+        change:document.getElementById('i-change').value,
+        booth:document.getElementById('i-booth').value,
+        fee:document.getElementById('i-fee').value,
+        exp:document.getElementById('i-exp').value
+      }
+    }));
+  }catch(e){}
+}
+function loadData(){
+  try{
+    var raw=localStorage.getItem(SK);
+    if(!raw) return;
+    var d=JSON.parse(raw);
+    if(d.sales){sales=d.sales;}
+    if(d.nsid){nsid=d.nsid;}
+    if(d.PRODS){PRODS=d.PRODS;}
+    if(d.npid){npid=d.npid;}
+    if(d.info){
+      var inf=d.info;
+      if(inf.date) document.getElementById('i-date').value=inf.date;
+      if(inf.weather){
+        document.getElementById('i-weather').value=inf.weather;
+        var wmap={'☀️晴れ':0,'⛅曇り':1,'🌧️雨':2,'❄️雪':3,'🌀台風':4};
+        var wi=wmap[inf.weather];
+        if(wi!==undefined) for(var i=0;i<5;i++){var b=document.getElementById('wb-'+i);if(b)b.classList.toggle('on',i===wi);}
+      }
+      if(inf.seller) document.getElementById('i-seller').value=inf.seller;
+      if(inf.loc) document.getElementById('i-loc').value=inf.loc;
+      document.getElementById('i-change').value=inf.change||0;
+      document.getElementById('i-booth').value=inf.booth||0;
+      document.getElementById('i-fee').value=inf.fee||0;
+      document.getElementById('i-exp').value=inf.exp||0;
+    }
+    showToast('📂 前回のデータを読み込みました');
+  }catch(e){}
+}
+function clearData(){
+  if(!confirm('全データを削除してリセットしますか?')) return;
+  localStorage.removeItem(SK);
+  location.reload();
+}
+
+var GAS_URL='https://script.google.com/macros/s/AKfycbwcG4RoMPxENmeV_T4dEpQkkAdFGLO1zWY8-AxS0oUH9jLWpHFD2vuBoZMVx2JLIrGn/exec';
+function sendToSheet(sale){
+  try{
+    var date=document.getElementById('i-date').value;
+    var weather=document.getElementById('i-weather').value;
+    var seller=document.getElementById('i-seller').value;
+    var loc=document.getElementById('i-loc').value;
+    var payload={
+      date:date,weather:weather,seller:seller,loc:loc,
+      time:sale.time,items:sale.items,
+      total:sale.total,saleId:sale.id
+    };
+    // GASはno-corsのPOSTではレスポンスが読めないためscriptタグ経由(JSONP的)で送信
+    var encoded=encodeURIComponent(JSON.stringify(payload));
+    var url=GAS_URL+'?data='+encoded;
+    var img=new Image();
+    img.onload=img.onerror=function(){
+      showToast('☁️ シートに保存しました');
+    };
+    // fetchでno-corsを使いつつ、失敗してもtoastだけ出す
+    fetch(GAS_URL,{
+      method:'POST',
+      mode:'no-cors',
+      body:JSON.stringify(payload)
+    }).then(function(){
+      showToast('☁️ シートに保存しました');
+    }).catch(function(err){
+      // GETフォールバック
+      fetch(url,{mode:'no-cors'}).then(function(){
+        showToast('☁️ シートに保存しました');
+      }).catch(function(){
+        showToast('⚠️ シート保存失敗（オフライン？）');
+      });
+    });
+  }catch(e){showToast('⚠️ シート保存エラー');}
+}
+
+function shareReport(){
+  if(!sales.length){showToast('⚠️ まだ売上データがありません');return;}
+  var e=getE(); var cnt=sales.length;
+  var date=document.getElementById('i-date').value;
+  var weather=document.getElementById('i-weather').value;
+  var seller=document.getElementById('i-seller').value;
+  var loc=document.getElementById('i-loc').value;
+  var pm={};
+  sales.forEach(function(s){s.items.forEach(function(i){
+    if(!pm[i.id]) pm[i.id]={nm:i.nm,em:i.em,qty:0,amt:0};
+    pm[i.id].qty+=i.qty; pm[i.id].amt+=i.pr*i.qty;
+  });});
+  var rk=Object.values(pm).sort(function(a,b){return b.amt-a.amt;});
+  var txt='🌿 マルシェ売上レポート\n━━━━━━━━━━━━━━━\n';
+  if(date)    txt+='📅 日付：'+date+'\n';
+  if(weather) txt+='🌤️ 天気：'+weather+'\n';
+  if(seller)  txt+='👤 販売者：'+seller+'\n';
+  if(loc)     txt+='📍 場所：'+loc+'\n';
+  txt+='━━━━━━━━━━━━━━━\n';
+  txt+='💰 総売上：¥'+e.tot.toLocaleString()+'\n';
+  txt+='📊 会計件数：'+cnt+'件\n';
+  txt+='👥 平均客単価：¥'+(cnt?Math.round(e.tot/cnt):0).toLocaleString()+'\n\n';
+  txt+='💴 経費内訳\n';
+  txt+='📊 販売手数料（'+e.fp+'%）：¥'+e.fee.toLocaleString()+'\n';
+  txt+='🏪 出店料：¥'+e.booth.toLocaleString()+'\n';
+  txt+='📦 その他経費：¥'+e.exp.toLocaleString()+'\n';
+  txt+='経費合計：¥'+e.etot.toLocaleString()+'\n';
+  txt+='✅ 手取り利益：¥'+e.profit.toLocaleString()+'\n\n';
+  txt+='🏆 商品別売上\n';
+  rk.forEach(function(p,i){txt+=(i+1)+'. '+p.em+p.nm+'　'+p.qty+'個　¥'+p.amt.toLocaleString()+'\n';});
+  txt+='\n📋 時間帯別売上\n';
+  var slots={};
+  sales.forEach(function(s){var k=slotKey(s.time);if(!slots[k]) slots[k]={total:0,cnt:0};slots[k].total+=s.total;slots[k].cnt++;});
+  Object.entries(slots).sort(function(a,b){return a[0].localeCompare(b[0]);}).forEach(function(kd){
+    txt+=kd[0]+'　¥'+kd[1].total.toLocaleString()+'（'+kd[1].cnt+'件）\n';
+  });
+
+  // 1. まずシートに保存
+  showToast('☁️ シートに保存中...');
+  sendAllToSheet(function(ok, msg){
+    if(ok){
+      showToast('✅ シートに保存しました');
+    } else {
+      showToast('⚠️ シート保存失敗：'+(msg||''));
+    }
+  });
+
+  // 2. テキストをコピー＆共有
+  setTimeout(function(){
+    if(navigator.share){
+      navigator.share({title:'マルシェ売上レポート',text:txt}).catch(function(){copyFallback(txt);});
+    } else {
+      copyFallback(txt);
+    }
+  }, 300);
+}
+
+function copyFallback(txt){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt)
+      .then(()=>showToast('📋 クリップボードにコピーしました'))
+      .catch(()=>showShareModal(txt));
+  } else {
+    showShareModal(txt);
+  }
+}
+function showShareModal(txt){
+  document.getElementById('share-text').value=txt;
+  openM('m-share');
+}
+
+/* ══════════════════════════════════
+   UI HELPERS
+══════════════════════════════════ */
+function copyShareText(){
+  var ta=document.getElementById('share-text');
+  ta.select();
+  try{
+    document.execCommand('copy');
+    showToast('📋 コピーしました！LINEやメモ帳に貼り付けてください');
+  }catch(e){
+    showToast('長押しして全選択→コピーしてください');
+  }
+}
+
+function setWeather(val, idx){
+  document.getElementById('i-weather').value=val;
+  for(var i=0;i<5;i++){
+    var b=document.getElementById('wb-'+i);
+    if(b) b.classList.toggle('on', i===idx);
+  }
+  saveData();
+}
+
+function setWeather(val,idx){
+  document.getElementById('i-weather').value=val;
+  for(var i=0;i<5;i++){var b=document.getElementById('wb-'+i);if(b)b.classList.toggle('on',i===idx);}
+  saveData();
+}
+
+function go(name,el){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('on'));
+  document.getElementById('pg-'+name).classList.add('on');
+  el.classList.add('on');
+  document.getElementById('main').scrollTop=0;
+  if(name==='sum')  renderSum();
+  if(name==='tl')   renderTL();
+  if(name==='prod') renderProdList();
+  if(name==='cash') updateCash();
+  if(name==='info') calcInfo();
+}
+function openM(id){document.getElementById(id).classList.add('on');}
+function closeM(id,e){
+  if(!e||e.target===document.getElementById(id))
+    document.getElementById(id).classList.remove('on');
+}
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('on');
+  setTimeout(()=>t.classList.remove('on'),2400);
+}
+</script>
+</body>
+</html>
